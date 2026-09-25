@@ -1,0 +1,8 @@
+node_modules/
+main.js
+dist/
+data.json
+*.log
+.DS_Store
+.test-artifacts/
+data.backup.json
