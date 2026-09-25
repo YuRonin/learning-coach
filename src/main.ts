@@ -45,7 +45,7 @@ export default class LearningCoachPlugin extends Plugin {
     this.registerView(VIEW_TYPE, leaf => new CoachView(leaf, this));
     this.addSettingTab(new CoachSettingsTab(this.app, this));
     this.addRibbonIcon('graduation-cap', '学习教练', () => { void this.openCoach(); });
-    this.addCommand({ id: 'open-learning-coach', name: '打开学习教练', callback: () => { void this.openCoach(); } });
+    this.addCommand({ id: 'open', name: '打开学习教练', callback: () => { void this.openCoach(); } });
     this.addCommand({ id: 'learn-current-note', name: '从当前笔记开始学习', callback: () => {
       void this.safely(async () => { const file = this.currentNote(); await this.openCoach(); await this.startFile(file, ''); });
     } });
@@ -220,7 +220,7 @@ export default class LearningCoachPlugin extends Plugin {
       if (existing && !(existing instanceof TFolder)) throw new Error('学习记录目录与现有文件重名。');
       if (!existing) await this.app.vault.createFolder(path);
     }
-    const safeName = session.source.name.replace(/[\\/:*?"<>|#\[\]]/g, '-').slice(0, 60);
+    const safeName = session.source.name.replace(/[\\/:*?"<>|#\x5b\x5d]/g, '-').slice(0, 60);
     const base = normalizePath(`${normalized}/${session.createdAt.slice(0, 10)} ${safeName} ${session.id.slice(0, 8)}${automatic ? ' 本轮总结' : ''}`);
     let path = `${base}.md`;
     if (automatic && this.app.vault.getAbstractFileByPath(path)) return;

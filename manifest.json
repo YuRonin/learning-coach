@@ -1,8 +1,8 @@
 {
   "id": "learning-coach",
   "name": "Learning Coach",
-  "version": "0.4.2",
-  "minAppVersion": "1.5.0",
+  "version": "0.4.3",
+  "minAppVersion": "1.7.2",
   "description": "围绕你的 Markdown 笔记讲解、提问、反馈和复习，支持自定义模型服务.",
   "author": "Steven",
   "isDesktopOnly": false

@@ -48,7 +48,7 @@ export class ModelGateway {
     let cancel: (() => void) | undefined;
     try {
       const interrupted = new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error('请求超时，学习现场已保存。可以重试或调整超时时间。')), settings.timeoutSeconds * 1000);
+        timer = globalThis.setTimeout(() => reject(new Error('请求超时，学习现场已保存。可以重试或调整超时时间。')), settings.timeoutSeconds * 1000);
         cancel = () => reject(new Error('已暂停。'));
         signal?.addEventListener('abort', cancel, { once: true });
       });
@@ -64,7 +64,7 @@ export class ModelGateway {
       if (typeof content !== 'string' || !content.trim()) throw new Error('模型没有返回文本内容。请确认该模型支持聊天接口。');
       return content;
     } finally {
-      clearTimeout(timer);
+      globalThis.clearTimeout(timer);
       if (cancel) signal?.removeEventListener('abort', cancel);
     }
   }

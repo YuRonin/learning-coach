@@ -47,7 +47,7 @@ export class CoachView extends ItemView {
 
   async onClose(): Promise<void> {
     this.unsubscribe?.();
-    clearTimeout(this.draftTimer);
+    globalThis.clearTimeout(this.draftTimer);
     await this.flushDraft();
     if (this.renderComponent) this.removeChild(this.renderComponent);
   }
@@ -67,7 +67,7 @@ export class CoachView extends ItemView {
   }
 
   private async flushDraft(): Promise<void> {
-    clearTimeout(this.draftTimer);
+    globalThis.clearTimeout(this.draftTimer);
     if (this.coach.engine.current && this.draftKey === draftContext(this.coach.engine.current)) {
       await this.coach.engine.saveDraft(this.draft, this.draftKey);
     }
@@ -213,8 +213,7 @@ export class CoachView extends ItemView {
       bubble.createDiv({ text: '教练讲解', cls: 'lc-speaker' });
       this.markdown(bubble, latestCoach.text, session.source.path);
     }
-    const timeline = document.createElement('details');
-    timeline.className = 'lc-timeline lc-disclosure';
+    const timeline = body.createEl('details', { cls: 'lc-timeline lc-disclosure' });
     timeline.createEl('summary', { text: `本轮互动 · ${session.entries.length} 条` });
     for (const entry of recent) {
       const bubble = timeline.createDiv({ cls: `lc-bubble lc-${entry.role}` });
@@ -265,9 +264,9 @@ export class CoachView extends ItemView {
     input.addEventListener('blur', () => { void this.coach.safely(() => this.flushDraft()); });
     input.addEventListener('input', () => {
       this.draft = input.value;
-      clearTimeout(this.draftTimer);
+      globalThis.clearTimeout(this.draftTimer);
       const key = this.draftKey;
-      this.draftTimer = setTimeout(() => {
+      this.draftTimer = globalThis.setTimeout(() => {
         if (key === this.draftKey) void this.coach.safely(() => this.flushDraft());
       }, 600);
     });

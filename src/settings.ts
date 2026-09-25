@@ -1,4 +1,4 @@
-import { PluginSettingTab, Setting, Notice, type App } from 'obsidian';
+import { PluginSettingTab, Setting, type App } from 'obsidian';
 import type LearningCoachPlugin from './main';
 import { endpoint } from './api';
 import type { Settings } from './domain';
@@ -10,9 +10,9 @@ export class CoachSettingsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     containerEl.addClass('lc-settings');
-    containerEl.createEl('h2', { text: '学习设置' });
+    new Setting(containerEl).setName('学习设置').setHeading();
     containerEl.createEl('p', { text: '连接你自己的模型服务。只有开始学习或点击测试时才会发送请求；学习时会发送所选笔记片段及相关作答。' });
-    containerEl.createEl('h3', { text: '连接模型' });
+    new Setting(containerEl).setName('连接模型').setHeading();
     const connection = containerEl.createDiv({ cls: 'lc-connection-status', attr: { role: 'status', 'aria-live': 'polite' } });
     connection.setText('填写下方信息，再测试连接。');
     const save = (patch: Partial<Settings>) => {
@@ -54,7 +54,7 @@ export class CoachSettingsTab extends PluginSettingTab {
         catch (error) { connection.dataset.state = 'error'; connection.setText(error instanceof Error ? error.message : '连接失败，请检查配置后重试。'); }
         finally { button.setDisabled(false).setButtonText('测试连接'); }
       }));
-    containerEl.createEl('h3', { text: '学习偏好' });
+    new Setting(containerEl).setName('学习偏好').setHeading();
     new Setting(containerEl).setName('默认带学方式').setDesc('先讲后练适合新知识；先测再学适合检查已有理解。')
       .addDropdown(dropdown => dropdown.addOption('guided', '先讲后练').addOption('diagnostic', '先测再学')
         .setValue(this.coach.data.settings.learningMode).onChange(value => save({ learningMode: value === 'diagnostic' ? 'diagnostic' : 'guided' })));
@@ -80,7 +80,7 @@ export class CoachSettingsTab extends PluginSettingTab {
         dropdown.setValue(String(this.coach.data.settings.maxCalls)).onChange(value => save({ maxCalls: Number(value) }));
       });
     new Setting(advanced).setName('生成温度').setDesc('较低的值通常更适合稳定的带学结构。')
-      .addSlider(slider => slider.setLimits(0, 1, 0.1).setValue(this.coach.data.settings.temperature).setDynamicTooltip()
+      .addSlider(slider => slider.setLimits(0, 1, 0.1).setValue(this.coach.data.settings.temperature)
         .onChange(value => save({ temperature: value })));
     new Setting(advanced).setName('发送生成温度参数').setDesc('如果服务商提示不支持生成温度参数，请关闭此选项。本地原生接口使用服务自身的配置。')
       .addToggle(toggle => toggle.setValue(this.coach.data.settings.sendTemperature).onChange(value => save({ sendTemperature: value })));

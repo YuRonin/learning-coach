@@ -1,10 +1,10 @@
 # Learning Coach
 
-Learning Coach is an Obsidian plugin for guided learning from Markdown notes. Select a note or a passage and work through explanations, questions, hints, feedback, and review scheduling. The current version is 0.4.2. The plugin interface is available in Simplified Chinese.
+Learning Coach is an Obsidian plugin for guided learning from Markdown notes. Select a note or a passage and work through explanations, questions, hints, feedback, and review scheduling. The current version is 0.4.3. The plugin interface is available in Simplified Chinese.
 
 ## Installation
 
-Extract `dist/learning-coach-0.4.2.zip` and copy the included `learning-coach` folder into your vault's `.obsidian/plugins/` directory:
+Extract `dist/learning-coach-0.4.3.zip` and copy the included `learning-coach` folder into your vault's `.obsidian/plugins/` directory:
 
 ```text
 Your vault/
