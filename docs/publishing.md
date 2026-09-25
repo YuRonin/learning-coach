@@ -17,7 +17,7 @@ Obsidian 官方要求版本使用三段式语义版本号，例如 `0.4.0`。把
 
 压缩包可以作为额外下载附件，但不能只上传源码压缩包或只上传本项目生成的 ZIP。Obsidian 会从与 `manifest.json` 版本完全相同的 Release 中下载上述文件。
 
-然后登录 `community.obsidian.md`，绑定 GitHub 账号，在社区目录添加插件。目录会读取默认分支的 `manifest.json`，使用名称、作者和描述提供搜索；审核通过后，用户可以从 Obsidian 的第三方插件页面搜索“学习教练”。后续版本只需要更新默认分支的 manifest、创建新版本 Release，不需要重复提交初始申请。
+然后登录 `community.obsidian.md`，绑定 GitHub 账号，在社区目录添加插件。目录会读取默认分支的 `manifest.json`，使用名称、作者和描述提供搜索；审核通过后，用户可以从 Obsidian 的第三方插件页面搜索 “Learning Coach”。插件界面仍使用中文名称“学习教练”。后续版本只需要更新默认分支的 manifest、创建新版本 Release，不需要重复提交初始申请。
 
 ## 当前密钥为什么不会随插件发布
 

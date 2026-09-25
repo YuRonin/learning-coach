@@ -1,10 +1,10 @@
 # 学习教练
 
-这是一个适用于 Obsidian 电脑端、iOS 和 Android 的中文学习插件，当前版本为 0.4.0。选择一篇笔记或一段内容后，学习教练会围绕原文讲解、提问、提示、评价和复习，并保存学习过程。
+这是一个适用于 Obsidian 电脑端、iOS 和 Android 的中文学习插件，当前版本为 0.4.1。选择一篇笔记或一段内容后，学习教练会围绕原文讲解、提问、提示、评价和复习，并保存学习过程。
 
 ## 安装
 
-解压 `dist/learning-coach-0.4.0.zip`，将其中的 `learning-coach` 文件夹复制到笔记库的 `.obsidian/plugins/` 下：
+解压 `dist/learning-coach-0.4.1.zip`，将其中的 `learning-coach` 文件夹复制到笔记库的 `.obsidian/plugins/` 下：
 
 ```text
 你的笔记库/
