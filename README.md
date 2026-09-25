@@ -1,13 +1,13 @@
-# 学习教练
+# Learning Coach
 
-这是一个适用于 Obsidian 电脑端、iOS 和 Android 的中文学习插件，当前版本为 0.4.1。选择一篇笔记或一段内容后，学习教练会围绕原文讲解、提问、提示、评价和复习，并保存学习过程。
+Learning Coach is an Obsidian plugin for guided learning from Markdown notes. Select a note or a passage and work through explanations, questions, hints, feedback, and review scheduling. The current version is 0.4.2. The plugin interface is available in Simplified Chinese.
 
-## 安装
+## Installation
 
-解压 `dist/learning-coach-0.4.1.zip`，将其中的 `learning-coach` 文件夹复制到笔记库的 `.obsidian/plugins/` 下：
+Extract `dist/learning-coach-0.4.2.zip` and copy the included `learning-coach` folder into your vault's `.obsidian/plugins/` directory:
 
 ```text
-你的笔记库/
+Your vault/
   .obsidian/
     plugins/
       learning-coach/
@@ -16,30 +16,30 @@
         styles.css
 ```
 
-重启 Obsidian 或重新加载第三方插件，在设置中启用“学习教练”。然后打开插件设置，填写服务地址、访问密钥和模型名称，点击“测试连接”。升级时只替换上面三个文件，保留已有的 `data.json`。
+Restart Obsidian or reload community plugins, then enable **Learning Coach** in Settings. Open the plugin settings, enter a service URL, API key, and model name, and select **Test connection**. When upgrading, replace the three files above and keep your existing `data.json`.
 
-不要把整个源码工程或 `node_modules` 复制到笔记库。
+Do not copy the source project or `node_modules` into your vault.
 
-## 手机与电脑
+## Desktop and mobile
 
-同一安装包适用于电脑端和手机端。电脑端显示右侧学习栏，手机端打开完整学习标签页。手机上可以通过命令面板运行“打开学习教练”或“选择笔记开始学习”，也可以把命令加入移动工具栏。
+The same package works on desktop, iOS, and Android. Desktop uses a right-side learning pane; mobile opens a full learning tab. On mobile, run **Open Learning Coach** or **Choose a note to start learning** from the command palette, or add either command to the mobile toolbar.
 
-手机上的 `localhost` 和 `127.0.0.1` 指手机自身，不能用它访问电脑上的本地模型服务。手机使用的服务地址必须能从手机访问；电脑上的本地服务需要自行配置局域网访问。推荐使用 HTTPS 服务地址。
+On a phone, `localhost` and `127.0.0.1` refer to the phone itself. They cannot reach a model service running on your computer. A mobile service URL must be reachable from the phone; a local computer service needs to be configured for access over your local network. HTTPS is recommended.
 
-两端可以使用相同的学习数据格式，但不支持同时编辑同一学习会话。切换设备前先完成保存和同步，避免两台设备同时推进同一会话。
+Both platforms use the same learning data format, but the same learning session should not be edited simultaneously on two devices. Finish saving and syncing before switching devices.
 
-## 模型服务配置
+## Model service configuration
 
-### 兼容接口
+### OpenAI-compatible API
 
-| 字段 | 填写方法 |
-|---|---|
-| 接口类型 | OpenAI 兼容接口 |
-| 服务地址 | 模型服务商提供的聊天接口地址 |
-| 访问密钥 | 该服务的密钥；无认证的本地服务可留空 |
-| 模型名称 | 服务商提供的准确模型名称 |
+| Field | What to enter |
+| --- | --- |
+| Provider | OpenAI-compatible API |
+| Service URL | The chat endpoint supplied by your model provider |
+| API key | The key for that service; leave blank for a local service without authentication |
+| Model name | The exact model name supplied by the service |
 
-地址可以填写服务根地址、版本地址或完整的聊天地址：
+You can enter a service root URL, a version URL, or a complete chat endpoint:
 
 ```text
 https://example.com
@@ -52,54 +52,55 @@ https://example.com/proxy/v1
 → https://example.com/proxy/v1/chat/completions
 
 https://example.com/v1/chat/completions
-→ 原样使用
+→ used as entered
 ```
 
-### 本地原生接口
+### Native Ollama API
 
-- 接口类型：Ollama 原生接口。
-- 服务地址：`http://127.0.0.1:11434`。
-- 访问密钥：通常留空。
-- 模型名称：本地已经安装的模型名称。
+- Provider: Ollama native API.
+- Service URL: `http://127.0.0.1:11434`.
+- API key: usually blank.
+- Model name: a model already installed locally.
 
-插件使用 `/api/chat`，不会下载或启动模型。连接测试只发送一条简短测试消息，不发送笔记内容；成功只代表服务返回了文本，不代表模型一定能稳定完成结构化带学。
+The plugin uses `/api/chat`; it does not download or start a model. A connection test sends one short test message and does not send note content. A successful test only means that the service returned text; it does not guarantee that the model will reliably complete a structured learning session.
 
-## 怎么学习
+## How to learn
 
-1. 打开一篇 Markdown 笔记。
-2. 点击左侧工具栏的学士帽图标，或运行命令“学习教练：打开学习教练”。
-3. 在学习台填写本次目标，也可以使用默认目标。
-4. 点击“开始学习当前笔记”。
-5. 阅读学习路线和讲解，用自己的话回答问题。
-6. 根据需要使用“给点提示”“直接讲解”“发送追问”或“跳过这题”。
-7. 如果不认可评价，可以展开“我不同意这个评价”，说明理由并请求复核。
-8. 随时暂停、继续，或点击“今天到这里”。也可以保存为 Markdown 学习记录。
+1. Open a Markdown note.
+2. Select the graduation-cap icon in the left ribbon, or run **Learning Coach: Open Learning Coach**.
+3. Enter a goal for this session, or use the default goal.
+4. Select **Start learning this note**.
+5. Read the learning route and explanation, then answer in your own words.
+6. Use **Give me a hint**, **Explain directly**, **Ask a follow-up**, or **Skip this question** when needed.
+7. If you disagree with an assessment, expand **I disagree with this assessment**, explain why, and request a review.
+8. Pause, resume, or select **That's enough for today** at any time. You can also save a Markdown learning record.
 
-长笔记会弹出分段选择器，每段最多 24,000 字符；也可以先选中章节，再使用右键菜单学习。单次回答最多 6,000 字符。默认方式是“先讲后练”，也可以切换为“先测再学”，并设置每轮题数。
+Long notes open a section picker, with a limit of 24,000 characters per section. You can also select a chapter and start learning from the context menu. A single answer can contain up to 6,000 characters. The default route is **Explain first, then practice**; you can switch to **Test first, then learn** and choose the number of questions per session.
 
-结束本轮后默认自动保存总结。在“今日”查看复习安排、提前复习或推迟一天。复习使用保存的原题；独立答对后按 1、3、7、14、30 天递增间隔，有提示、看过讲解或未答对则回到 1 天。这是简单的复习调度规则，不是精确的长期掌握度模型。
+At the end of a session, a summary is saved by default. Use **Today** to view review items, review early, or postpone a review by one day. Reviews reuse the saved questions. An independently correct answer advances the interval through 1, 3, 7, 14, and 30 days; a hint, revealed explanation, or incorrect answer returns the interval to one day. This is a simple review schedule, not a precise long-term mastery model.
 
-## 数据与隐私
+## Data and privacy
 
-- 配置、笔记快照、当前会话和历史保存在当前笔记库的插件目录 `data.json`。
-- 每次写入前会保留上一版 `data.backup.json`，主文件损坏时尝试恢复。
-- 访问密钥保存在本地插件数据中且未加密。不要公开分享这些文件，也要留意笔记库同步工具是否会同步它们。
-- 远程模型会收到你选定的笔记片段、学习目标和相关回答；插件不会自动发送整个笔记库。
-- 导出的 Markdown 放入配置的库内目录，默认是“学习教练”。同名导出会自动创建新文件，不覆盖已有记录。
-- 源笔记变化后会提示；当前会话继续使用开始学习时保存的快照。要学习新版内容，请结束后重新开始。
-- 暂停会停止接受迟到的模型结果，但服务端可能仍继续处理已经发出的请求。
+- Settings, note snapshots, the current session, and history are stored in the plugin's `data.json` inside the current vault.
+- Before each write, the previous version is kept as `data.backup.json` so the plugin can attempt recovery if the main file is damaged.
+- The API key is stored unencrypted in local plugin data. Do not share these files publicly, and check whether your vault sync service will sync them.
+- The plugin enumerates Markdown files in the current vault so you can choose a source note. It does not automatically upload the whole vault.
+- The remote model receives the note passage you select, your learning goal, and related answers. The plugin sends these only to the service configured by you.
+- Exported Markdown records are written to a folder in your vault, `学习教练` by default. If a file has the same name, the plugin creates a new file instead of overwriting the existing record.
+- If the source note changes, the plugin shows a notice. The current session continues to use the snapshot saved when learning started; start a new session to learn the updated content.
+- Pausing stops the plugin from accepting late model results, although a service may continue processing a request that was already sent.
 
-## 已实现与边界
+## Current scope
 
-已实现：模型配置、连接测试、当前笔记和选中片段、学习目标与路线、逐题带学、提示和讲解、评价与复核、会话保存恢复、历史记录、复习安排、Markdown 导出、调用上限和超时。
+Implemented: model configuration, connection testing, current notes and selected passages, learning goals and routes, question-by-question guidance, hints and explanations, assessments and reviews, session save and restore, history, review scheduling, Markdown export, call limits, and timeouts.
 
-尚未实现：跨文件课程规划、PDF/OCR 导入、联网检索、语音、多设备并发同步，以及精确的长期掌握度估计。
+Not implemented: cross-file course planning, PDF/OCR import, web search, voice features, concurrent multi-device sync, or precise long-term mastery estimation.
 
-题目引用存在不等于内容必然正确；模型仍可能误判、提前泄露答案或给出有歧义的问题。请结合原文和复核功能判断。当前版本尚未证明能提升学习效果。
+Citations in a question do not guarantee that the content is correct. A model may still misjudge an answer, reveal an answer too early, or ask an ambiguous question. Check the source note and use the review flow when needed. This version has not been shown to improve learning outcomes.
 
-## 开发
+## Development
 
-建议使用 Node.js 22 或更新版本。依赖版本由 `package-lock.json` 固定。
+Node.js 22 or newer is recommended. Dependency versions are pinned in `package-lock.json`.
 
 ```bash
 npm ci
@@ -109,20 +110,20 @@ npm run smoke
 npm run release:check
 ```
 
-`npm run dev` 监听源码变化。`npm run package` 生成可安装的 `dist/learning-coach/` 和带版本号的 ZIP，不包含用户数据。
+`npm run dev` watches the source files. `npm run package` creates an installable `dist/learning-coach/` directory and a versioned ZIP without user data.
 
-界面规范在 [design-system/MASTER.md](design-system/MASTER.md)，后续新增页面和组件都应遵循其中的中文术语、视觉令牌、触控和无障碍规则。
+The interface guidelines are in [design-system/MASTER.md](design-system/MASTER.md). New pages and components should follow its terminology, visual tokens, touch targets, and accessibility rules.
 
 ```text
 src/
-  main.ts       插件入口、串行保存与记录导出
-  settings.ts   模型配置和连接测试
-  view.ts       学习界面与历史记录
-  api.ts        地址规范化、协议适配、超时与暂停
-  domain.ts     状态、输出校验和学习记录
-  session.ts    学习循环、作答、重试与恢复
-  prompts.ts    按学习动作构造模型上下文
-  review.ts     从真实作答派生复习计划
-  pickers.ts    笔记和长文分段选择
-tests/          模型服务、复习与会话行为测试
+  main.ts       plugin entry point, serialized saves, and record export
+  settings.ts   model configuration and connection testing
+  view.ts       learning interface and history
+  api.ts        URL normalization, protocol adapters, timeouts, and pause handling
+  domain.ts     state, output validation, and learning records
+  session.ts    learning loop, answers, retries, and recovery
+  prompts.ts    model context for each learning action
+  review.ts     review plans derived from real answers
+  pickers.ts    note and long-note section selection
+tests/          model service, review, and session behavior tests
 ```
