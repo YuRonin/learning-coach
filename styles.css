@@ -26,14 +26,27 @@
   --lc-on-accent: #142820;
   --lc-soft: #203b32;
 }
-.lc-root { padding: 0 !important; display: flex; flex-direction: column; height: 100%; min-width: 0; overflow: hidden; background: var(--lc-canvas); }
+.workspace-leaf-content .lc-root, .modal .lc-root { padding: 0; display: flex; flex-direction: column; height: 100%; min-width: 0; overflow: hidden; background: var(--lc-canvas); }
+.lc-root.lc-course-form { display: block; height: auto; overflow-y: auto; }
+.lc-course-form .lc-label { margin: 12px 0; }
+.lc-course-form input, .lc-root select { display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 48px; margin: 8px 0; font-size: 16px; }
+.lc-course-form .lc-policy-option input { width: 18px; height: 18px; min-height: 18px; margin: 0; }
+.lc-course-form fieldset { min-width: 0; border: 1px solid var(--lc-line); border-radius: var(--lc-radius); }
+.lc-course-form .lc-error:empty { display: none; }
+.lc-options { border: 0; padding: 0; margin: 16px 0; min-width: 0; }
+.lc-option { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 12px; margin: 8px 0; border: 1px solid var(--lc-line); border-radius: 8px; cursor: pointer; }
+.lc-option:has(input:checked) { border-color: var(--lc-accent); background: var(--lc-soft); }
+.lc-option input { flex-shrink: 0; accent-color: var(--lc-accent); }
+.lc-option span { min-width: 0; overflow-wrap: anywhere; }
+.lc-course-unit { padding: 12px 0; border-bottom: 1px solid var(--lc-line); }
+.lc-root :is(input, select):focus-visible { outline: 2px solid var(--lc-accent); outline-offset: 3px; }
 .lc-header { display: flex; gap: var(--lc-space-3); align-items: center; justify-content: space-between; padding: var(--lc-space-6) var(--lc-space-4) var(--lc-space-4); background: var(--lc-surface); }
 .lc-header > div { min-width: 0; }
 .lc-header h2 { font-size: 1.4em; line-height: 1.4; margin: 0; font-weight: 650; letter-spacing: .02em; }
 .lc-tagline { color: var(--lc-muted); font-size: .85em; margin: var(--lc-space-1) 0 0; }
 .lc-eyebrow { color: var(--lc-accent); font-size: .85em; font-weight: 600; }
 .lc-nav { display: flex; gap: var(--lc-space-1); padding: 0 var(--lc-space-4) var(--lc-space-3); background: var(--lc-surface); border-bottom: 1px solid var(--lc-line); }
-.lc-root .lc-nav button { flex: 1; color: var(--lc-muted); border: 1px solid transparent; background: transparent; box-shadow: none; }
+.lc-root .lc-nav button { flex: 1 1 0; min-width: 0; padding-inline: 6px; overflow-wrap: anywhere; color: var(--lc-muted); border: 1px solid transparent; background: transparent; box-shadow: none; }
 .lc-root .lc-nav button.is-active { color: var(--lc-accent); background: var(--lc-soft); font-weight: 650; border-bottom-color: var(--lc-accent); }
 .lc-body { flex: 1; min-height: 0; min-width: 0; overflow-y: auto; overflow-wrap: anywhere; overscroll-behavior: contain; padding: var(--lc-space-4); padding-bottom: max(24px, env(safe-area-inset-bottom)); scroll-padding-block: 16px; }
 .lc-body > * { max-width: 720px; margin-inline: auto; }
@@ -91,7 +104,7 @@
 .lc-error { padding: 16px; background: var(--lc-surface); color: var(--text-error); border: 1px solid var(--text-error); border-radius: var(--lc-radius); line-height: 1.7; margin-bottom: 16px; }
 .lc-footer { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--lc-line); }
 .lc-footer p { width: 100%; margin: 0; }
-.lc-correction { margin-top: 16px !important; }
+.lc-root .lc-correction { margin-top: 16px; }
 .lc-endpoint { font-family: var(--font-monospace); font-size: .8em; color: var(--lc-muted); overflow-wrap: anywhere; }
 .lc-review-question { font-size: 1em; line-height: 1.75; margin: 12px 0; }
 .lc-review-card .lc-eyebrow { overflow-wrap: anywhere; }
@@ -126,5 +139,5 @@ body.is-mobile .lc-body { padding-bottom: max(32px, env(safe-area-inset-bottom))
 }
 @keyframes lc-pulse { 50% { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) {
-  .lc-root *, .lc-settings * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .lc-root.lc-root *, .lc-root.lc-root *::before, .lc-settings.lc-settings * { animation: none; transition: none; scroll-behavior: auto; }
 }

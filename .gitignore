@@ -6,3 +6,22 @@ data.json
 .DS_Store
 .test-artifacts/
 data.backup.json
+data.*.json
+learning-cache.json
+
+# Local planning, acceptance records, and agent working instructions
+/AGENTS.md
+/CLAUDE.md
+/design-system/
+/docs/optimization-plan.md
+/docs/release-acceptance.md
+/docs/publishing.md
+/docs/internal/
+/plans/
+/.plans/
+
+# Local secrets, generated bundles, and archives
+.env
+.env.*
+*.zip
+*.tar.gz

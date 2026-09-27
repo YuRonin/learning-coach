@@ -40,6 +40,14 @@ test('native Ollama uses chat, options and supports an empty key', async () => {
   assert.equal(await gateway.complete({ ...DEFAULT_SETTINGS, provider: 'ollama', baseUrl: 'http://localhost:11434', model: 'local' }, []), '你好');
 });
 
+test('DeepSeek usage is measured only from reported numbers, with no invented savings', async () => {
+  const gateway = new ModelGateway(async () => ({ status: 200, text: JSON.stringify({ choices: [{ message: { content: 'OK' } }], usage: { prompt_tokens: 100, completion_tokens: 20, prompt_cache_hit_tokens: 80 } }) }));
+  await gateway.complete({ ...DEFAULT_SETTINGS, model: 'deepseek-flash' }, []);
+  assert.deepEqual(gateway.usage, { reportedResponses: 1, inputTokens: 100, outputTokens: 20, cachedInputTokens: 80, cacheReportedResponses: 1 });
+  const missing = new ModelGateway(async () => ({ status: 200, text: '{"choices":[{"message":{"content":"OK"}}]}' }));
+  await missing.complete({ ...DEFAULT_SETTINGS, model: 'fixture' }, []); assert.equal(missing.usage.reportedResponses, 0);
+});
+
 test('HTTP error messages never echo provider bodies or secrets', async () => {
   const gateway = new ModelGateway(async () => ({ status: 401, text: 'secret-key-123 raw request details' }));
   await assert.rejects(gateway.complete({ ...DEFAULT_SETTINGS, model: 'test' }, []), error => {

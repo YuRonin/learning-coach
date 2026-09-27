@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a study, storage, model, language, or interface problem
+body:
+  - type: markdown
+    attributes:
+      value: Do not upload API keys, complete data.json files, backups, or private notes. Use short anonymous material to reproduce model errors. Check trace exports before sharing.
+  - type: input
+    id: versions
+    attributes:
+      label: Versions and device
+      description: Plugin version, Obsidian version, OS version, and device model.
+    validations:
+      required: true
+  - type: dropdown
+    id: language
+    attributes:
+      label: Interface language
+      options:
+        - English
+        - Simplified Chinese
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps and actual result
+      description: Where did you start, what did you do, and how did the result differ from your expectation?
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model and API type (optional)
+      description: Model identifier and compatible API or Ollama only. Do not include keys or private gateway URLs.
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Anonymous reproduction or screenshot (optional)
+      description: Redact credentials, private addresses, personal information, and note content before attaching images.

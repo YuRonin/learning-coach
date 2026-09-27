@@ -1,17 +1,21 @@
 {
   "name": "obsidian-learning-coach",
-  "version": "0.4.3",
+  "version": "0.9.3",
   "private": true,
   "description": "A note-grounded learning coach for Obsidian",
   "scripts": {
     "dev": "node esbuild.config.mjs --watch",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "node --import tsx --import ./tests/setup.ts --test tests/*.test.ts",
     "smoke": "node scripts/smoke.mjs",
     "build": "npm run typecheck && node esbuild.config.mjs",
     "package": "npm run build && node scripts/package.mjs",
     "test:e2e": "npm run build && node scripts/obsidian-e2e.mjs",
-    "release:check": "npm run package && node scripts/release-check.mjs"
+    "release:check": "npm run package && node scripts/release-check.mjs",
+    "benchmark": "tsx scripts/benchmark.mts",
+    "evaluate:model": "tsx scripts/evaluate-model.mts",
+    "check:public": "node scripts/check-public-content.mjs",
+    "evaluate:checker": "tsx scripts/evaluate-checker.mts"
   },
   "dependencies": {
     "fflate": "^0.8.3",

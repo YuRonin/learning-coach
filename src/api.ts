@@ -1,3 +1,5 @@
+import { t as tr } from './i18n';
+import { traceRef, type TraceRun, type TraceAction, type TraceStore } from './trace';
 import type { Settings } from './domain';
 
 export interface ChatMessage { role: 'system' | 'user' | 'assistant'; content: string }
@@ -7,9 +9,9 @@ export type Transport = (request: HttpRequest) => Promise<HttpResponse>;
 
 export function endpoint(base: string, provider: Settings['provider']): string {
   let url: URL;
-  try { url = new URL(base.trim()); } catch { throw new Error('请输入完整的 服务地址，例如 https://example.com/v1。'); }
-  if (!['http:', 'https:'].includes(url.protocol)) throw new Error('服务地址必须使用 http 或 https。');
-  if (url.username || url.password || url.search || url.hash) throw new Error('服务地址不能包含用户名、密码、查询参数或 #。请将密钥填入 访问密钥。');
+  try { url = new URL(base.trim()); } catch { throw new Error(tr('m000')); }
+  if (!['http:', 'https:'].includes(url.protocol)) throw new Error(tr('m001'));
+  if (url.username || url.password || url.search || url.hash) throw new Error(tr('m002'));
   let path = url.pathname.replace(/\/+$/, '');
   if (provider === 'ollama') {
     if (!path.endsWith('/api/chat')) path += path.endsWith('/api') ? '/chat' : '/api/chat';
@@ -22,22 +24,30 @@ export function endpoint(base: string, provider: Settings['provider']): string {
 
 export function validateSettings(settings: Settings): void {
   endpoint(settings.baseUrl, settings.provider);
-  if (!settings.model.trim()) throw new Error('请先在插件设置中填写模型名称。');
+  if (!settings.model.trim()) throw new Error(tr('m003'));
 }
 
 function responseError(status: number): Error {
-  if (status === 401 || status === 403) return new Error(`认证失败（${status}）。请检查 访问密钥 和模型访问权限。`);
-  if (status === 404) return new Error('接口或模型未找到（404）。请检查 服务地址 和模型名称。');
-  if (status === 429) return new Error('请求受限（429）。请检查额度或稍后重试。');
-  return new Error(`模型服务返回 HTTP ${status}。请检查接口配置或稍后重试。`);
+  if (status === 401 || status === 403) return new Error(tr('m004', [status]));
+  if (status === 404) return new Error(tr('m005'));
+  if (status === 429) return new Error(tr('m006'));
+  return new Error(tr('m007', [status]));
 }
 
 export class ModelGateway {
+  traceStore?: TraceStore;
+  usage = { reportedResponses: 0, inputTokens: 0, outputTokens: 0, cachedInputTokens: 0, cacheReportedResponses: 0 };
   constructor(private readonly transport: Transport) {}
 
-  async complete(settings: Settings, messages: ChatMessage[], signal?: AbortSignal): Promise<string> {
+  async complete(settings: Settings, messages: ChatMessage[], signal?: AbortSignal, trace?: TraceRun, action: TraceAction = 'connection'): Promise<string> {
+    const ownTrace = !trace;
+    if (!trace && this.traceStore) trace = await this.traceStore.begin(action);
+    const requestId = crypto.randomUUID(); const start = Date.now();
+    let code: 'configuration' | 'network' | 'http' | 'timeout' | 'cancelled' | 'invalid-json' | 'empty-response' = 'configuration';
+    let httpStatus: number | undefined;
+    try {
     validateSettings(settings);
-    if (signal?.aborted) throw new Error('已暂停。');
+    if (signal?.aborted) throw new Error(tr('m008'));
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (settings.apiKey.trim()) headers.Authorization = `Bearer ${settings.apiKey.trim()}`;
     const body = settings.provider === 'ollama'
@@ -47,25 +57,47 @@ export class ModelGateway {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let cancel: (() => void) | undefined;
     try {
+      code = 'network';
+      if (trace) await trace.event({ kind: 'request', status: 'started', requestId, provider: settings.provider, modelRef: traceRef(settings.model), inputChars: messages.reduce((n, m) => n + m.content.length, 0) });
+      if (signal?.aborted) { code = 'cancelled'; throw new Error(tr('m008')); }
       const interrupted = new Promise<never>((_, reject) => {
-        timer = globalThis.setTimeout(() => reject(new Error('请求超时，学习现场已保存。可以重试或调整超时时间。')), settings.timeoutSeconds * 1000);
-        cancel = () => reject(new Error('已暂停。'));
+        timer = setTimeout(() => { code = 'timeout'; reject(new Error(tr('m009'))); }, settings.timeoutSeconds * 1000);
+        cancel = () => { code = 'cancelled'; reject(new Error(tr('m008'))); };
         signal?.addEventListener('abort', cancel, { once: true });
       });
       const request = this.transport({ url: endpoint(settings.baseUrl, settings.provider), method: 'POST', headers, body: JSON.stringify(body) })
-        .catch(() => { throw new Error('无法连接模型服务。请检查 服务地址、网络或本地服务是否启动。'); });
+        .catch(() => { throw new Error(tr('m010')); });
       const response = await Promise.race([request, interrupted]);
-      if (signal?.aborted) throw new Error('已暂停。');
+      if (signal?.aborted) throw new Error(tr('m008'));
+      httpStatus = response.status; code = 'http';
       if (response.status < 200 || response.status >= 300) throw responseError(response.status);
+      code = 'invalid-json';
       let data: unknown;
-      try { data = JSON.parse(response.text); } catch { throw new Error('模型服务返回的数据格式不正确。请检查是否填入了网页地址。'); }
+      try { data = JSON.parse(response.text); } catch { throw new Error(tr('m011')); }
       const obj = data as { message?: { content?: unknown }; choices?: { message?: { content?: unknown } }[] };
       const content = settings.provider === 'ollama' ? obj?.message?.content : obj?.choices?.[0]?.message?.content;
-      if (typeof content !== 'string' || !content.trim()) throw new Error('模型没有返回文本内容。请确认该模型支持聊天接口。');
+      code = 'empty-response';
+      if (typeof content !== 'string' || !content.trim()) throw new Error(tr('m012'));
+      const report = data as { usage?: { prompt_tokens?: unknown; completion_tokens?: unknown; prompt_cache_hit_tokens?: unknown; prompt_tokens_details?: { cached_tokens?: unknown } }; prompt_eval_count?: unknown; eval_count?: unknown };
+      const validCount = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+      const input = settings.provider === 'ollama' ? report.prompt_eval_count : report.usage?.prompt_tokens;
+      const output = settings.provider === 'ollama' ? report.eval_count : report.usage?.completion_tokens;
+      const cached = report.usage?.prompt_cache_hit_tokens ?? report.usage?.prompt_tokens_details?.cached_tokens;
+      if (validCount(input) && validCount(output)) {
+        this.usage.reportedResponses++; this.usage.inputTokens += input; this.usage.outputTokens += output;
+        if (validCount(cached) && cached <= input) { this.usage.cachedInputTokens += cached; this.usage.cacheReportedResponses++; }
+      }
+      await trace?.event({ kind: 'request', status: 'success', requestId, httpStatus, durationMs: Date.now() - start, outputChars: content.length, inputTokens: validCount(input) ? input : undefined, outputTokens: validCount(output) ? output : undefined, cachedInputTokens: validCount(cached) && validCount(input) && cached <= input ? cached : undefined });
+      if (ownTrace) await trace?.finish('success');
       return content;
     } finally {
-      globalThis.clearTimeout(timer);
+      clearTimeout(timer);
       if (cancel) signal?.removeEventListener('abort', cancel);
+    }
+    } catch (error) {
+      await trace?.event({ kind: 'request', status: signal?.aborted ? 'cancelled' : 'failure', requestId, httpStatus, durationMs: Date.now() - start, code: signal?.aborted ? 'cancelled' : code });
+      if (ownTrace) await trace?.finish(signal?.aborted ? 'cancelled' : 'failure');
+      throw error;
     }
   }
 

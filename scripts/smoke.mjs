@@ -16,10 +16,11 @@ class Plugin {
   addSettingTab(tab) { this.settingsTab = tab; }
   addRibbonIcon() {}
   addCommand(command) { this.commands.push(command); }
+  removeCommand(id) { this.commands = this.commands.filter(c => c.id !== id); }
   registerEvent() {}
 }
 const obsidian = {
-  Platform: { isMobile: false }, Plugin, Component, TFile, TFolder, ItemView: class {}, Modal: class {}, FuzzySuggestModal: class {}, PluginSettingTab: class {}, Setting: class {},
+  Platform: { isMobile: false }, Plugin, Component, TFile, TFolder, ItemView: class {}, Modal: class {}, FuzzySuggestModal: class {}, PluginSettingTab: class { update() {} }, Setting: class {},
   Notice: class {}, MarkdownRenderer: {}, normalizePath: value => value,
   requestUrl: async () => { throw new Error('Real network is prohibited in smoke test'); },
 };
@@ -27,12 +28,12 @@ const module = { exports: {} };
 vm.runInNewContext(await readFile('main.js', 'utf8'), {
   module, exports: module.exports,
   require: name => { assert.equal(name, 'obsidian'); return obsidian; },
-  crypto, structuredClone, URL, AbortController, setTimeout, clearTimeout, console,
+  crypto, TextEncoder, structuredClone, URL, AbortController, setTimeout, clearTimeout, console,
 });
 const Coach = module.exports.default;
 assert.equal(typeof Coach, 'function');
 const coach = new Coach();
-coach.app = { workspace: { on: () => ({}), getActiveFile: () => null, onLayoutReady: callback => callback() } };
+coach.app = { vault: { on: () => ({}) }, workspace: { on: () => ({}), getActiveFile: () => null, onLayoutReady: callback => callback() } };
 await coach.onload();
 assert.equal(coach.views.has('learning-coach-view'), true);
 assert.equal(coach.commands.length, 5);
@@ -82,3 +83,45 @@ for (const mobile of [false, true]) {
 }
 assert.equal(JSON.parse(await readFile('manifest.json', 'utf8')).isDesktopOnly, false);
 console.log('Cross-platform smoke passed: mobile tab, desktop sidebar, existing view reuse.');
+
+// Upgrade and recovery use synthetic fixtures only, never a real user's settings.
+const legacy = JSON.parse(await readFile('tests/fixtures/legacy-0.5.0.json', 'utf8'));
+const files = new Map();
+const upgraded = new Coach();
+upgraded.manifest = { dir: 'fixture-plugin' };
+upgraded.saved = structuredClone(legacy);
+upgraded.app = { workspace: coach.app.workspace, vault: { on: () => ({}), adapter: {
+  exists: async path => files.has(path),
+  read: async path => { if (!files.has(path)) throw new Error('missing'); return files.get(path); },
+  write: async (path, value) => { files.set(path, value); },
+} } };
+await upgraded.onload();
+assert.equal(upgraded.data.version, 4);
+assert.equal(JSON.parse(files.get('fixture-plugin/data.pre-0.9.0.json')).version, 1);
+assert.equal(upgraded.engine.current.draft, legacy.session.draft);
+assert.equal(upgraded.engine.current.choiceDraft[0], 'B');
+await upgraded.engine.resume();
+const originalQuestionId = upgraded.engine.current.question.id;
+await upgraded.changeQuestionValidity('legacy-session', originalQuestionId, '两个选项都合理');
+assert.ok(upgraded.saved.session.question.invalidated);
+assert.equal(upgraded.saved.version, 4);
+assert.equal(JSON.parse(files.get('fixture-plugin/data.backup.json')).version, 4);
+assert.equal(upgraded.saved.settings.apiKey, legacy.settings.apiKey);
+await upgraded.changeQuestionValidity('legacy-session', originalQuestionId, null);
+assert.equal(upgraded.engine.current.question.invalidated, undefined);
+const validBackup = JSON.stringify(upgraded.saved);
+files.set('fixture-plugin/data.backup.json', validBackup);
+upgraded.onunload();
+const recovered = new Coach(); recovered.manifest = upgraded.manifest; recovered.app = upgraded.app; recovered.saved = { damaged: true };
+await recovered.onload();
+assert.equal(recovered.engine.current.id, 'legacy-session');
+assert.equal(recovered.data.settings.apiKey, legacy.settings.apiKey);
+recovered.onunload();
+const future = new Coach(); future.manifest = upgraded.manifest; future.app = upgraded.app; future.saved = { version: 99 };
+await assert.rejects(future.onload(), /更新版本|newer plugin version/);
+assert.equal(future.saved.version, 99);
+files.set('fixture-plugin/data.backup.json', 'invalid-json');
+const damaged = new Coach(); damaged.manifest = upgraded.manifest; damaged.app = upgraded.app; damaged.saved = { damaged: true };
+await assert.rejects(damaged.onload(), /Unsupported/);
+assert.deepEqual(damaged.saved, { damaged: true });
+console.log('Upgrade smoke passed: 0.5.0 settings and drafts, one-time backup, exclusions, recovery, future-version and damaged-data guards.');

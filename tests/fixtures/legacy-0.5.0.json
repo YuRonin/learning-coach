@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "settings": { "model": "fixture-model", "baseUrl": "https://example.test/v1", "apiKey": "fixture-only-key" },
+  "courses": [{ "id": "course", "name": "状态恢复测试课程", "folder": "课程", "examDate": "", "minutes": 25, "units": [{ "id": "课程/状态.md", "title": "状态", "path": "课程/状态.md" }] }],
+  "session": {
+    "id": "legacy-session", "createdAt": "2026-09-20T08:00:00Z", "updatedAt": "2026-09-20T08:00:00Z", "status": "ready",
+    "source": { "path": "课程/状态.md", "name": "状态", "text": "超时不等于失败，执行结果可能未知。", "mtime": 1, "selection": false },
+    "goal": "区分超时与失败", "outline": ["理解执行结果未知"],
+    "question": { "id": "legacy-question", "type": "single", "prompt": "超时说明什么？", "options": [{ "id": "A", "text": "必然失败" }, { "id": "B", "text": "结果未知" }], "correctOptions": ["B"], "referenceQuote": "超时不等于失败，执行结果可能未知。", "rubric": "区分未知与失败", "expectedAnswer": "B，结果未知。" },
+    "entries": [], "attempts": [], "pending": null, "calls": 1, "error": null,
+    "courseId": "course", "unitId": "课程/状态.md", "draft": "这是一条尚未发送的追问", "choiceDraft": ["B"], "confidenceDraft": "unsure"
+  },
+  "archive": [], "reviewSnoozes": {}
+}

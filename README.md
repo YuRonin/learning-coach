@@ -1,129 +1,118 @@
 # Learning Coach
 
-Learning Coach is an Obsidian plugin for guided learning from Markdown notes. Select a note or a passage and work through explanations, questions, hints, feedback, and review scheduling. The current version is 0.4.3. The plugin interface is available in Simplified Chinese.
+Turn your Obsidian course notes into a study routine: confirm knowledge points, plan your available time, practice, correct mistakes, and revisit the material with different questions.
 
-## Installation
+**Version 0.9.3 is a pre-release for acceptance testing, not the final 1.0 release.** The interface defaults to English and supports Simplified Chinese. Choose your language in **Settings → Learning Coach → Language / 语言**. New coaching responses follow that language; your notes, answers, and previous records are not translated or rewritten.
 
-Extract `dist/learning-coach-0.4.3.zip` and copy the included `learning-coach` folder into your vault's `.obsidian/plugins/` directory:
+[User guide](docs/course-guide.md) · [Chinese user guide](docs/course-guide.zh-CN.md) · [Release notes](docs/releases/0.9.3.md)
+
+## What you can do
+
+- Organize a notes folder as a course, exclude unrelated material, and confirm source-linked knowledge points.
+- Set question types for each course: single choice, multiple choice, true/false, and short answer. Use fixed proportions or let the coach adapt within your choices.
+- Plan a short study session around your available time, due reviews, and learning gaps.
+- Answer questions, ask for hints or explanations, and return later for independent review.
+- Run a unit assessment with feedback held until submission. Request a reassessment or invalidate a flawed question without losing the original answer.
+- Inspect local agent traces and export the last seven days for troubleshooting.
+
+Generated questions are practice based on your material, not official exam questions. Source matching and model review reduce some errors but do not guarantee a correct answer. The plugin does not predict exam scores or pass rates.
+
+## Install the pre-release
+
+Requires **Obsidian 1.13.7 or later**. Older versions have not been verified.
+
+1. Build the plugin or obtain the `learning-coach-0.9.3.zip` package from the maintainer.
+2. Put its `learning-coach` folder under `<vault>/.obsidian/plugins/`.
+3. Reload community plugins and enable **Learning Coach**.
+4. Open its settings, choose your language, and enter your model connection details.
+5. Select **Test connection**. This sends a short test message, not your notes, and may incur a small provider charge.
+
+This project has not yet been published in the Obsidian community directory. Updating the plugin requires replacing only `main.js`, `manifest.json`, and `styles.css`; keep your existing data files.
+
+## Start studying
+
+Open **Courses → Add course**, choose a notes folder, preview the included notes, and set your daily budget and question types. Each note becomes a unit.
+
+Expand a unit and select **Extract knowledge points from notes**. Initial candidates are generated locally. Check the source quotes, then confirm the points you want to study. Optional model-assisted splitting and syllabus mapping send only the material described in their dialogs and require you to save the preview.
+
+On **Today**, plan tasks for your available time. You can also study a confirmed point directly, or start from the current note or selected text without creating a course. Long notes use a section picker; each session accepts up to 24,000 source characters and each answer up to 6,000 characters.
+
+## Connect a model
+
+Use an **OpenAI-compatible** chat endpoint or the **native Ollama** API. Enter the provider's base URL, API key, and exact model identifier. Compatible endpoints accept a root URL, a `/v1` URL, or a complete `/chat/completions` URL; the settings page shows the resolved endpoint. Custom gateways may require a version prefix.
+
+Ollama requires an already running, reachable service and an installed model. The plugin does not download or start models. On a phone, `127.0.0.1` refers to the phone, not your computer.
+
+Real-provider quality evaluation remains pending. A successful connection test only confirms that the service returns text; it does not establish question quality.
+
+## How learning evidence works
+
+Objective questions are graded locally against the answer saved when the question was generated. Short answers and reassessments use your model. Hints, explanations, reused questions, and self-reported confidence remain part of the evidence.
+
+A knowledge point can become provisionally stable only after independent correct answers to different questions at least a day apart. Later gaps return it to practice. The progress bar counts assessed questions, not mastery.
+
+Question settings are frozen for an active session. Changing a course affects future sessions. Fixed proportions balance cumulative displayed questions, including skips; short sessions may not match the proportions exactly. Invalidated questions remain in history but are excluded from progress and review calculations.
+
+## Caching and usage
+
+The local response cache is enabled by default. It stores validated question-generation and question-review responses for seven days, with a limit of 50 entries and about 1 MB. Hits survive restarts and issue no model request. Grading, reassessment, hints, and follow-ups are not reused from this cache.
+
+Cache keys depend on request content and connection settings. English and Chinese prompts produce different keys. Changing connection settings or temperature clears the cache. You can disable or clear it in settings. Cache corruption or write failure does not delete study records.
+
+Provider-side context caching is separate. The plugin displays token counts only when reported by the service; it does not estimate costs or infer saved tokens from character counts.
+
+## Agent traces
+
+Traces are enabled by default and written to a normal vault folder:
 
 ```text
-Your vault/
-  .obsidian/
-    plugins/
-      learning-coach/
-        main.js
-        manifest.json
-        styles.css
+Learning Coach/Traces/YYYY-MM-DD/<trace-id>.md
 ```
 
-Restart Obsidian or reload community plugins, then enable **Learning Coach** in Settings. Open the plugin settings, enter a service URL, API key, and model name, and select **Test connection**. When upgrading, replace the three files above and keep your existing `data.json`.
+Existing configured folders are preserved, including folders named in Chinese. Changing the interface language does not rename or move files.
 
-Do not copy the source project or `node_modules` into your vault.
+Each action has a separate file with request timing, reported usage, cache hits, validation results, local grading, and save results. Retries get new trace IDs linked to the same operation digest. An unfinished trace may mean an action is still running or the app closed before its result was recorded.
 
-## Desktop and mobile
+In settings, **View agent traces** shows the latest 100 records. **Export last seven days** reads up to the 1,000 most recently modified trace files and skips damaged files. Exports include validated fields, not text manually added to a trace. Old traces do not expire automatically; you can delete their date folders yourself.
 
-The same package works on desktop, iOS, and Android. Desktop uses a right-side learning pane; mobile opens a full learning tab. On mobile, run **Open Learning Coach** or **Choose a note to start learning** from the command palette, or add either command to the mobile toolbar.
+Traces do not contain API keys, service URLs, note bodies, complete prompts, model responses, or your answers. Timing, usage, behavior, and identifier digests are still personal information. Check exports before sharing. These are execution records, not a model's internal reasoning.
 
-On a phone, `localhost` and `127.0.0.1` refer to the phone itself. They cannot reach a model service running on your computer. A mobile service URL must be reachable from the phone; a local computer service needs to be configured for access over your local network. HTTPS is recommended.
+## Desktop, mobile, and sync
 
-Both platforms use the same learning data format, but the same learning session should not be edited simultaneously on two devices. Finish saving and syncing before switching devices.
+The same bundle targets desktop, iOS, and Android. Desktop uses a sidebar; mobile uses a full tab. Desktop flows and mobile-sized layouts have been tested. **iOS and Android device testing is still pending.**
 
-## Model service configuration
+Trace files and exported summaries can sync as ordinary notes if your sync service includes their folders. Course progress, answers, settings, and active sessions live in the plugin's `data.json`; syncing them depends on whether your service includes plugin data. That file also contains your unencrypted API key and base URL.
 
-### OpenAI-compatible API
-
-| Field | What to enter |
-| --- | --- |
-| Provider | OpenAI-compatible API |
-| Service URL | The chat endpoint supplied by your model provider |
-| API key | The key for that service; leave blank for a local service without authentication |
-| Model name | The exact model name supplied by the service |
-
-You can enter a service root URL, a version URL, or a complete chat endpoint:
-
-```text
-https://example.com
-→ https://example.com/v1/chat/completions
-
-https://example.com/v1
-→ https://example.com/v1/chat/completions
-
-https://example.com/proxy/v1
-→ https://example.com/proxy/v1/chat/completions
-
-https://example.com/v1/chat/completions
-→ used as entered
-```
-
-### Native Ollama API
-
-- Provider: Ollama native API.
-- Service URL: `http://127.0.0.1:11434`.
-- API key: usually blank.
-- Model name: a model already installed locally.
-
-The plugin uses `/api/chat`; it does not download or start a model. A connection test sends one short test message and does not send note content. A successful test only means that the service returned text; it does not guarantee that the model will reliably complete a structured learning session.
-
-## How to learn
-
-1. Open a Markdown note.
-2. Select the graduation-cap icon in the left ribbon, or run **Learning Coach: Open Learning Coach**.
-3. Enter a goal for this session, or use the default goal.
-4. Select **Start learning this note**.
-5. Read the learning route and explanation, then answer in your own words.
-6. Use **Give me a hint**, **Explain directly**, **Ask a follow-up**, or **Skip this question** when needed.
-7. If you disagree with an assessment, expand **I disagree with this assessment**, explain why, and request a review.
-8. Pause, resume, or select **That's enough for today** at any time. You can also save a Markdown learning record.
-
-Long notes open a section picker, with a limit of 24,000 characters per section. You can also select a chapter and start learning from the context menu. A single answer can contain up to 6,000 characters. The default route is **Explain first, then practice**; you can switch to **Test first, then learn** and choose the number of questions per session.
-
-At the end of a session, a summary is saved by default. Use **Today** to view review items, review early, or postpone a review by one day. Reviews reuse the saved questions. An independently correct answer advances the interval through 1, 3, 7, 14, and 30 days; a hint, revealed explanation, or incorrect answer returns the interval to one day. This is a simple review schedule, not a precise long-term mastery model.
+There is **no automatic conflict merge for simultaneous study on multiple devices**. Finish or pause on one device, wait for saving and sync, then switch. If plugin data is excluded from sync, traces can sync while learning progress does not. Automatic cross-device conflict merging is not supported.
 
 ## Data and privacy
 
-- Settings, note snapshots, the current session, and history are stored in the plugin's `data.json` inside the current vault.
-- Before each write, the previous version is kept as `data.backup.json` so the plugin can attempt recovery if the main file is damaged.
-- The API key is stored unencrypted in local plugin data. Do not share these files publicly, and check whether your vault sync service will sync them.
-- The plugin enumerates Markdown files in the current vault so you can choose a source note. It does not automatically upload the whole vault.
-- The remote model receives the note passage you select, your learning goal, and related answers. The plugin sends these only to the service configured by you.
-- Exported Markdown records are written to a folder in your vault, `学习教练` by default. If a file has the same name, the plugin creates a new file instead of overwriting the existing record.
-- If the source note changes, the plugin shows a notice. The current session continues to use the snapshot saved when learning started; start a new session to learn the updated content.
-- Pausing stops the plugin from accepting late model results, although a service may continue processing a request that was already sent.
+Connection settings, source snapshots, answers, courses, plans, and assessments are stored in the current vault's plugin `data.json`. The previous complete save is retained in `data.backup.json`. Keys are stored unencrypted. The separate `learning-cache.json` may contain source quotes and generated questions, but not connection keys or complete requests.
 
-## Current scope
+Starting a study action sends selected material and relevant answers to your configured model service. Optional model suggestions also send the material described in the dialog. The plugin does not automatically upload the whole vault. Your provider and sync service have their own data policies.
 
-Implemented: model configuration, connection testing, current notes and selected passages, learning goals and routes, question-by-question guidance, hints and explanations, assessments and reviews, session save and restore, history, review scheduling, Markdown export, call limits, and timeouts.
+Older data-format upgrades retain `data.pre-0.9.0.json`; the current data format is 4. Back up privately before downgrading. An older snapshot does not include later work. Clearing course records does not delete source notes, exported notes, caches, or existing backups.
 
-Not implemented: cross-file course planning, PDF/OCR import, web search, voice features, concurrent multi-device sync, or precise long-term mastery estimation.
+The release package includes only three runtime files, never personal configuration, caches, traces, or test vaults. See [Security and privacy](SECURITY.md).
 
-Citations in a question do not guarantee that the content is correct. A model may still misjudge an answer, reveal an answer too early, or ask an ambiguous question. Check the source note and use the review flow when needed. This version has not been shown to improve learning outcomes.
+## Development and validation
 
-## Development
-
-Node.js 22 or newer is recommended. Dependency versions are pinned in `package-lock.json`.
+Use Node.js 22 or later and the committed lockfile.
 
 ```bash
 npm ci
 npm test
 npm run build
 npm run smoke
+npm run test:e2e
 npm run release:check
+npm run check:public
 ```
 
-`npm run dev` watches the source files. `npm run package` creates an installable `dist/learning-coach/` directory and a versioned ZIP without user data.
+End-to-end tests require a local Obsidian installation. They use an isolated vault and a local fixture service, never your personal API configuration. Mobile emulation is not a real-device result.
 
-The interface guidelines are in [design-system/MASTER.md](design-system/MASTER.md). New pages and components should follow its terminology, visual tokens, touch targets, and accessibility rules.
+`npm run package` creates the installable folder and ZIP. `npm run benchmark` uses synthetic data. `npm run evaluate:model` and `npm run evaluate:checker` use explicit environment variables for anonymous provider evaluations; they do not read personal plugin settings.
 
-```text
-src/
-  main.ts       plugin entry point, serialized saves, and record export
-  settings.ts   model configuration and connection testing
-  view.ts       learning interface and history
-  api.ts        URL normalization, protocol adapters, timeouts, and pause handling
-  domain.ts     state, output validation, and learning records
-  session.ts    learning loop, answers, retries, and recovery
-  prompts.ts    model context for each learning action
-  review.ts     review plans derived from real answers
-  pickers.ts    note and long-note section selection
-tests/          model service, review, and session behavior tests
-```
+See the [contribution guide](CONTRIBUTING.md). PDF/OCR import, web question search, voice, timed full-length mock exams, and multi-device conflict merging are not implemented.
+
+For bug reports, include the version and reproduction steps. Do not upload API keys, complete configuration files, or private course notes.
