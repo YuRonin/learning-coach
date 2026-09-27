@@ -12,7 +12,7 @@ const pluginDir = path.join(vault, '.obsidian/plugins/learning-coach');
 await mkdir(pluginDir, { recursive: true });
 await mkdir(profile, { recursive: true });
 for (const name of ['main.js', 'manifest.json', 'styles.css']) await copyFile(name, path.join(pluginDir, name));
-for (const name of ['data.json', 'data.backup.json', 'learning-cache.json']) await rm(path.join(pluginDir, name), { force: true });
+for (const name of ['data.json', 'data.backup.json', 'config.json', 'learning-cache.json']) await rm(path.join(pluginDir, name), { force: true });
 for (const name of ['移动后的测试笔记.md', '空白测试.md', '数学测试', '学习教练/运行追踪', 'Learning Coach/Traces']) await rm(path.join(vault, name), { force: true, recursive: true });
 const sourceText = '# Harness 学习笔记\n\n超时不等于失败，执行结果可能未知。恢复需要保存真实状态与执行标识。\n\n幂等操作允许重复请求，但同一逻辑操作只产生一次效果。\n';
 await writeFile(path.join(vault, '测试笔记.md'), sourceText);
@@ -258,8 +258,15 @@ try {
   await page.screenshot({ path: path.join(root, 'today.png') });
   const data = JSON.parse(await readFile(path.join(pluginDir, 'data.json'), 'utf8'));
   assert.ok(data.archive.length >= 3);
+  assert.equal('apiKey' in data.settings, false);
+  assert.equal('baseUrl' in data.settings, false);
+  const connection = JSON.parse(await readFile(path.join(pluginDir, 'config.json'), 'utf8'));
+  assert.equal(connection.apiKey, 'fixture-key-not-a-real-secret');
+  assert.equal(connection.baseUrl, `http://127.0.0.1:${port}/v1`);
   const backup = JSON.parse(await readFile(path.join(pluginDir, 'data.backup.json'), 'utf8'));
-  assert.equal(backup.version, 4);
+  assert.equal(backup.version, 5);
+  assert.equal('apiKey' in backup.settings, false);
+  assert.equal('baseUrl' in backup.settings, false);
   // Official Obsidian mobile emulation, not an iOS/Android device test.
   await page.evaluate(async () => {
     app.workspace.getLeavesOfType('learning-coach-view').forEach(leaf => leaf.detach());

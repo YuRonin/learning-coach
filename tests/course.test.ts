@@ -21,6 +21,13 @@ test('old plugin data loads without erasing configuration or requiring courses',
   assert.equal(data.settings.baseUrl, 'https://example.test/v1');
 });
 
+test('connection fields can be absent from the version 5 syncable settings payload', () => {
+  const data = dataSchema.parse({ version: 5, settings: { model: 'fixture-model' }, session: null, archive: [] });
+  assert.equal(data.version, 5);
+  assert.equal(data.settings.apiKey, '');
+  assert.equal(data.settings.baseUrl, 'https://api.openai.com/v1');
+});
+
 test('invalid candidate choice keys, duplicate options and malformed boolean questions are rejected', () => {
   assert.throws(() => validateQuestion({ ...question, correctOptions: ['C'] }));
   assert.throws(() => validateQuestion({ ...question, options: [question.options![0]!, question.options![0]!] }));

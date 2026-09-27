@@ -2,9 +2,9 @@
 
 Turn your Obsidian course notes into a study routine: confirm knowledge points, plan your available time, practice, correct mistakes, and revisit the material with different questions.
 
-**Version 0.9.3 is a pre-release for acceptance testing, not the final 1.0 release.** The interface defaults to English and supports Simplified Chinese. Choose your language in **Settings → Learning Coach → Language / 语言**. New coaching responses follow that language; your notes, answers, and previous records are not translated or rewritten.
+**Version 0.9.4 is a pre-release for acceptance testing, not the final 1.0 release.** The interface defaults to English and supports Simplified Chinese. Choose your language in **Settings → Learning Coach → Language / 语言**. New coaching responses follow that language; your notes, answers, and previous records are not translated or rewritten.
 
-[User guide](docs/course-guide.md) · [Chinese user guide](docs/course-guide.zh-CN.md) · [Release notes](docs/releases/0.9.3.md)
+[User guide](docs/course-guide.md) · [Chinese user guide](docs/course-guide.zh-CN.md) · [Release notes](docs/releases/0.9.4.md)
 
 ## What you can do
 
@@ -21,7 +21,7 @@ Generated questions are practice based on your material, not official exam quest
 
 Requires **Obsidian 1.13.7 or later**. Older versions have not been verified.
 
-1. Build the plugin or obtain the `learning-coach-0.9.3.zip` package from the maintainer.
+1. Build the plugin or obtain the `learning-coach-0.9.4.zip` package from the maintainer.
 2. Put its `learning-coach` folder under `<vault>/.obsidian/plugins/`.
 3. Reload community plugins and enable **Learning Coach**.
 4. Open its settings, choose your language, and enter your model connection details.
@@ -81,17 +81,19 @@ Traces do not contain API keys, service URLs, note bodies, complete prompts, mod
 
 The same bundle targets desktop, iOS, and Android. Desktop uses a sidebar; mobile uses a full tab. Desktop flows and mobile-sized layouts have been tested. **iOS and Android device testing is still pending.**
 
-Trace files and exported summaries can sync as ordinary notes if your sync service includes their folders. Course progress, answers, settings, and active sessions live in the plugin's `data.json`; syncing them depends on whether your service includes plugin data. That file also contains your unencrypted API key and base URL.
+Trace files and exported summaries can sync as ordinary notes if your sync service includes their folders. Course progress, answers, learning preferences, and active sessions live in the plugin's `data.json`; syncing them depends on whether your service includes plugin configuration files. The local `config.json` stores the unencrypted API key and base URL and should stay excluded from sync.
+
+Before syncing plugin data between devices, keep `config.json` excluded and allow `data.json` if you want learning progress to travel with the vault. Back up before upgrading from older versions, since previously synchronized copies or file history may still contain old credentials; rotate a key if it was exposed.
 
 There is **no automatic conflict merge for simultaneous study on multiple devices**. Finish or pause on one device, wait for saving and sync, then switch. If plugin data is excluded from sync, traces can sync while learning progress does not. Automatic cross-device conflict merging is not supported.
 
 ## Data and privacy
 
-Connection settings, source snapshots, answers, courses, plans, and assessments are stored in the current vault's plugin `data.json`. The previous complete save is retained in `data.backup.json`. Keys are stored unencrypted. The separate `learning-cache.json` may contain source quotes and generated questions, but not connection keys or complete requests.
+Source snapshots, answers, courses, plans, assessments, active sessions, and ordinary learning preferences are stored in the current vault's plugin `data.json`. The previous save is retained in `data.backup.json`; it excludes connection secrets. The local `config.json` stores the API key and base URL in plaintext. The separate `learning-cache.json` may contain source quotes and generated questions, but not connection keys or complete requests. Exclude `config.json`, backups, and cache from sync services and Git.
 
 Starting a study action sends selected material and relevant answers to your configured model service. Optional model suggestions also send the material described in the dialog. The plugin does not automatically upload the whole vault. Your provider and sync service have their own data policies.
 
-Older data-format upgrades retain `data.pre-0.9.0.json`; the current data format is 4. Back up privately before downgrading. An older snapshot does not include later work. Clearing course records does not delete source notes, exported notes, caches, or existing backups.
+Older data-format upgrades may retain `data.pre-0.9.0.json`; the current data format is 5. Back up privately before downgrading. An older snapshot does not include later work. Clearing course records does not delete source notes, exported notes, caches, or existing backups.
 
 The release package includes only three runtime files, never personal configuration, caches, traces, or test vaults. See [Security and privacy](SECURITY.md).
 

@@ -7,6 +7,7 @@ data.json
 .test-artifacts/
 data.backup.json
 data.*.json
+config.json
 learning-cache.json
 
 # Local planning, acceptance records, and agent working instructions

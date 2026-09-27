@@ -1,7 +1,7 @@
 import { markdownInFolder } from './vault-files';
 import { t as tr, setLanguage } from './i18n';
 import { Plugin, Platform, Notice, TFile, TFolder, normalizePath, requestUrl, type WorkspaceLeaf } from 'obsidian';
-import { dataSchema, DEFAULT_SETTINGS, exportSession, MAX_SOURCE_LENGTH, splitNote, type PluginData, type Session, type Settings } from './domain';
+import { connectionConfigSchema, dataSchema, DEFAULT_CONNECTION_CONFIG, DEFAULT_SETTINGS, exportSession, MAX_SOURCE_LENGTH, splitNote, type ConnectionConfig, type PluginData, type Session, type Settings } from './domain';
 import { ModelGateway, validateSettings } from './api';
 import { LearningSession } from './session';
 import { CoachView, VIEW_TYPE } from './view';
@@ -21,7 +21,7 @@ import { LearningCache } from './cache';
 
 export default class LearningCoachPlugin extends Plugin {
   private coachSettingsTab?: CoachSettingsTab;
-  data: PluginData = { version: 4, settings: { ...DEFAULT_SETTINGS }, session: null, archive: [], reviewSnoozes: {}, courses: [], plans: [], exams: [] };
+  data: PluginData = { version: 5, settings: { ...DEFAULT_SETTINGS }, session: null, archive: [], reviewSnoozes: {}, courses: [], plans: [], exams: [] };
   engine!: LearningSession;
   cache!: LearningCache;
   trace!: TraceStore;
@@ -38,7 +38,7 @@ export default class LearningCoachPlugin extends Plugin {
     let saved: unknown;
     try { saved = await this.loadData(); } catch { saved = { corrupt: true }; }
     if (saved != null) {
-      if (typeof saved === 'object' && 'version' in saved && typeof saved.version === 'number' && saved.version > 4) {
+      if (typeof saved === 'object' && 'version' in saved && typeof saved.version === 'number' && saved.version > 5) {
         throw new Error(tr('m201'));
       }
       let result = dataSchema.safeParse(saved);
@@ -55,14 +55,24 @@ export default class LearningCoachPlugin extends Plugin {
         new Notice(tr('m203'), 10000);
         throw new Error('Unsupported Learning Coach data; original file was not overwritten.');
       }
-      if (this.manifest?.dir && typeof migrationSource === 'object' && migrationSource && 'version' in migrationSource && Number(migrationSource.version) < 4) {
-        const path = normalizePath(`${this.manifest.dir}/data.pre-0.9.0.json`);
-        if (!await this.app.vault.adapter.exists(path)) await this.app.vault.adapter.write(path, JSON.stringify(migrationSource));
-      }
       this.data = result.data;
+      const sourceVersion = typeof migrationSource === 'object' && migrationSource && 'version' in migrationSource && typeof migrationSource.version === 'number' ? migrationSource.version : 0;
+      const connection = await this.loadConnectionConfig(migrationSource);
+      this.data.settings.apiKey = connection.apiKey;
+      this.data.settings.baseUrl = connection.baseUrl;
       if (this.data.session && this.data.session.status !== 'ended') {
         this.data.session.status = 'paused';
       }
+      if (this.manifest?.dir && sourceVersion < 4) {
+        const path = normalizePath(`${this.manifest.dir}/data.pre-0.9.0.json`);
+        if (!await this.app.vault.adapter.exists(path)) await this.app.vault.adapter.write(path, JSON.stringify(this.withoutConnectionFields(migrationSource)));
+      }
+      if (this.manifest?.dir) await this.sanitizeHistoricalDataFiles();
+      if (sourceVersion < 5 || this.hasConnectionFields(migrationSource)) await this.saveData(this.syncableSnapshot(this.data));
+    } else {
+      const connection = await this.loadConnectionConfig(null);
+      this.data.settings.apiKey = connection.apiKey;
+      this.data.settings.baseUrl = connection.baseUrl;
     }
     setLanguage(this.data.settings.language);
     this.cache = new LearningCache({
@@ -122,16 +132,24 @@ export default class LearningCoachPlugin extends Plugin {
     });
   }
 
-  private update(mutator: (data: PluginData) => void): Promise<void> {
-    const next = this.writeQueue.catch(() => undefined).then(async () => {
-      const snapshot = structuredClone(this.data);
-      mutator(snapshot);
-      if (this.manifest?.dir) await this.app.vault.adapter.write(this.backupPath(), JSON.stringify(this.data));
-      await this.saveData(snapshot);
-      this.data = snapshot;
-    });
+  private enqueueWrite(work: () => Promise<void>): Promise<void> {
+    const next = this.writeQueue.catch(() => undefined).then(work);
     this.writeQueue = next;
     return next;
+  }
+
+  private async persistDataSnapshot(snapshot: PluginData): Promise<void> {
+    if (this.manifest?.dir) await this.app.vault.adapter.write(this.backupPath(), JSON.stringify(this.syncableSnapshot(this.data)));
+    await this.saveData(this.syncableSnapshot(snapshot));
+    this.data = snapshot;
+  }
+
+  private update(mutator: (data: PluginData) => void): Promise<void> {
+    return this.enqueueWrite(async () => {
+      const snapshot = structuredClone(this.data);
+      mutator(snapshot);
+      await this.persistDataSnapshot(snapshot);
+    });
   }
 
   private persistSession(session: Session): Promise<void> {
@@ -171,7 +189,18 @@ export default class LearningCoachPlugin extends Plugin {
   }
 
   async saveSettings(patch: Partial<Settings>): Promise<void> {
-    await this.update(data => { data.settings = { ...data.settings, ...patch }; });
+    await this.enqueueWrite(async () => {
+      const snapshot = structuredClone(this.data);
+      snapshot.settings = { ...snapshot.settings, ...patch };
+      const hasConnectionPatch = 'apiKey' in patch || 'baseUrl' in patch;
+      const hasSyncedPatch = Object.keys(patch).some(key => key !== 'apiKey' && key !== 'baseUrl');
+      if (hasConnectionPatch && this.manifest?.dir) {
+        const connection = connectionConfigSchema.parse({ apiKey: snapshot.settings.apiKey, baseUrl: snapshot.settings.baseUrl });
+        await this.app.vault.adapter.write(this.connectionPath(), JSON.stringify(connection));
+      }
+      if (hasSyncedPatch) await this.persistDataSnapshot(snapshot);
+      else this.data = snapshot;
+    });
     if (patch.language) {
       setLanguage(patch.language);
       this.coachSettingsTab?.update();
@@ -186,6 +215,80 @@ export default class LearningCoachPlugin extends Plugin {
   async flushSettings(): Promise<void> { await this.writeQueue; }
 
   private backupPath(): string { return normalizePath(`${this.manifest.dir}/data.backup.json`); }
+
+  private connectionPath(): string { return normalizePath(`${this.manifest.dir}/config.json`); }
+
+  private async loadConnectionConfig(source: unknown): Promise<ConnectionConfig> {
+    const fallback = this.legacyConnectionConfig(source);
+    if (!this.manifest?.dir) return fallback;
+    const path = this.connectionPath();
+    if (await this.app.vault.adapter.exists(path)) {
+      try { return connectionConfigSchema.parse(JSON.parse(await this.app.vault.adapter.read(path))); }
+      catch {
+        new Notice(tr('m660'), 10000);
+        if (this.hasConnectionFields(source)) {
+          await this.app.vault.adapter.write(path, JSON.stringify(fallback));
+          return fallback;
+        }
+        return DEFAULT_CONNECTION_CONFIG;
+      }
+    }
+    if (this.hasConnectionFields(source)) await this.app.vault.adapter.write(path, JSON.stringify(fallback));
+    return fallback;
+  }
+
+  private legacyConnectionConfig(source: unknown): ConnectionConfig {
+    if (!source || typeof source !== 'object' || !('settings' in source) || !source.settings || typeof source.settings !== 'object') return DEFAULT_CONNECTION_CONFIG;
+    const settings = source.settings as Record<string, unknown>;
+    return connectionConfigSchema.parse({
+      ...(typeof settings.apiKey === 'string' ? { apiKey: settings.apiKey } : {}),
+      ...(typeof settings.baseUrl === 'string' ? { baseUrl: settings.baseUrl } : {}),
+    });
+  }
+
+  private hasConnectionFields(value: unknown): boolean {
+    if (!value || typeof value !== 'object' || !('settings' in value) || !value.settings || typeof value.settings !== 'object') return false;
+    const settings = value.settings as Record<string, unknown>;
+    return 'apiKey' in settings || 'baseUrl' in settings;
+  }
+
+  private withoutConnectionFields(value: unknown): unknown {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+    const snapshot = structuredClone(value) as Record<string, unknown>;
+    if (snapshot.settings && typeof snapshot.settings === 'object' && !Array.isArray(snapshot.settings)) {
+      const settings = snapshot.settings as Record<string, unknown>;
+      delete settings.apiKey;
+      delete settings.baseUrl;
+    }
+    return snapshot;
+  }
+
+  private syncableSnapshot(data: PluginData): Record<string, unknown> {
+    const snapshot = structuredClone(data) as unknown as Record<string, unknown>;
+    snapshot.version = 5;
+    const settings = { ...(snapshot.settings as Record<string, unknown>) };
+    delete settings.apiKey;
+    delete settings.baseUrl;
+    snapshot.settings = settings;
+    return snapshot;
+  }
+
+  private async sanitizeHistoricalDataFiles(): Promise<void> {
+    if (!this.manifest?.dir) return;
+    let files: string[];
+    try { files = (await this.app.vault.adapter.list(this.manifest.dir)).files; }
+    catch { return; }
+    for (const file of files) {
+      const name = file.split('/').at(-1) ?? '';
+      if (name !== 'data.backup.json' && !/^data\.pre-.*\.json$/.test(name)) continue;
+      const path = normalizePath(`${this.manifest.dir}/${name}`);
+      try {
+        const raw = await this.app.vault.adapter.read(path);
+        const parsed: unknown = JSON.parse(raw);
+        if (this.hasConnectionFields(parsed)) await this.app.vault.adapter.write(path, JSON.stringify(this.withoutConnectionFields(parsed)));
+      } catch { /* Preserve damaged historical files for manual recovery. */ }
+    }
+  }
 
   subscribe(callback: () => void): () => void {
     this.listeners.add(callback);

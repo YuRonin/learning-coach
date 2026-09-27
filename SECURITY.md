@@ -2,11 +2,12 @@
 
 Do not put API keys in public issues, screenshots, logs, or source code.
 
-Learning Coach stores its connection settings and study data in the current vault's plugin data. API keys are unencrypted. Study requests send selected note excerpts, learning goals, and relevant answers to the model service you configure. Optional material suggestions send the inputs described in their dialogs. The plugin does not automatically upload the entire vault.
+Learning Coach stores study data in the current vault's plugin data and connection settings separately in `config.json`. API keys remain unencrypted. Study requests send selected note excerpts, learning goals, and relevant answers to the model service you configure. Optional material suggestions send the inputs described in their dialogs. The plugin does not automatically upload the entire vault.
 
 ## Files that must remain private
 
-- `data.json`, `data.backup.json`, and `data.pre-*.json` contain settings and learning data, including unencrypted credentials.
+- `config.json` contains the unencrypted API key and base URL. Keep it local and exclude it from sync.
+- `data.json`, `data.backup.json`, and `data.pre-*.json` contain learning data and non-connection settings. New versions remove credentials from these files.
 - `learning-cache.json` can contain note quotes and generated questions. Its keys are digests; raw connection keys, URLs, and complete requests are not stored in the cache.
 - Exported study notes contain your answers and source material.
 - Agent traces omit keys, URLs, note bodies, prompts, and answers, but still reveal timing, usage, behavior, and linked identifier digests. They are not anonymous.
@@ -19,7 +20,7 @@ The local response cache retains at most 50 entries, about 1 MB, for seven days.
 
 Traces default to `Learning Coach/Traces` for new configurations. Existing folder settings are preserved. Turning tracing off retains existing files; old traces are not automatically deleted.
 
-Syncing `data.json` also transfers its API key and base URL. Learning Coach does not merge conflicting learning state from concurrent devices. Check your sync configuration and finish syncing before switching devices.
+If you synchronize plugin data between devices, exclude the local `config.json` and finish syncing before switching devices. Learning Coach does not merge conflicting learning state from concurrent devices.
 
 ## Reporting a vulnerability
 

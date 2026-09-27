@@ -400,7 +400,7 @@ export const en = {
   "m397": "Request endpoint: {0}",
   "m398": "Invalid URL",
   "m399": "API key",
-  "m400": "Leave empty for a local service without authentication. The key is stored unencrypted in this plugin's data.json. Do not share that file.",
+  "m400": "Leave empty for a local service without authentication. The key and base URL are stored unencrypted in this plugin's local config.json. Exclude that file from sync and do not share it.",
   "m401": "Enter the key from your provider",
   "m402": "Model name",
   "m403": "Use the exact model identifier from your provider. Choose a chat model that reliably returns structured output.",
@@ -651,5 +651,6 @@ export const en = {
   "m648": "View learning evidence",
   "m649": "No answers submitted in this session yet.",
   "m650": "Invalidated: {0}. Excluded from progress and review.",
-  "m651": "Unanswered question: {0}"
+  "m651": "Unanswered question: {0}",
+  "m660": "The local connection config could not be read. Re-enter your base URL and API key in settings."
 } as const;

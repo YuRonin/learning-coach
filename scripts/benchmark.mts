@@ -13,7 +13,7 @@ const sessions = Array.from({ length: 3000 }, (_, i) => {
   s.attempts.push({ id: `attempt-${i}`, question: { id: `question-${i}`, type: 'short', prompt: `情境 ${i} 的两个任务分别是什么关系？`, referenceQuote: text, rubric: '区分同时和交替', expectedAnswer: '根据发生时刻判断', hints: 0, revealed: false }, answer: '交替推进', at: new Date(2026, 0, 1 + Math.floor(i / 500)).toISOString(), assessment: { verdict: i % 3 ? 'correct' : 'partial', feedback: '合成评价。' }, revisions: [] });
   return s;
 });
-const data = { version: 4, settings: DEFAULT_SETTINGS, session: null, archive: sessions, courses: [{ id: 'synthetic', name: '合成课程', folder: '', examDate: '', minutes: 25, units: [{ id: 'unit', path: '合成课程.md', title: '合成章节', knowledge: points }] }] };
+const data = { version: 5, settings: DEFAULT_SETTINGS, session: null, archive: sessions, courses: [{ id: 'synthetic', name: '合成课程', folder: '', examDate: '', minutes: 25, units: [{ id: 'unit', path: '合成课程.md', title: '合成章节', knowledge: points }] }] };
 const results: Record<string, number> = {};
 let start = performance.now(); const json = JSON.stringify(data); results.serializeMs = performance.now() - start; results.bytes = Buffer.byteLength(json);
 start = performance.now(); const parsed = dataSchema.parse(JSON.parse(json)); results.parseValidateMs = performance.now() - start;

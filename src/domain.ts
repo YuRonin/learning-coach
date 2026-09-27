@@ -26,6 +26,12 @@ export const settingsSchema = z.object({
 });
 export type Settings = z.infer<typeof settingsSchema>;
 export const DEFAULT_SETTINGS = settingsSchema.parse({});
+export const connectionConfigSchema = z.object({
+  baseUrl: z.string().default('https://api.openai.com/v1'),
+  apiKey: z.string().default(''),
+});
+export type ConnectionConfig = z.infer<typeof connectionConfigSchema>;
+export const DEFAULT_CONNECTION_CONFIG = connectionConfigSchema.parse({});
 export const MAX_SOURCE_LENGTH = 24_000;
 
 export const assessmentSchema = z.object({
@@ -104,7 +110,7 @@ export const sessionSchema = z.object({
 });
 export type Session = z.infer<typeof sessionSchema>;
 export const dataSchema = z.object({
-  version: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).transform(() => 4 as const),
+  version: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]).transform(() => 5 as const),
   settings: settingsSchema,
   session: sessionSchema.nullable(),
   archive: z.array(sessionSchema),

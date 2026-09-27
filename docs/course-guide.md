@@ -22,7 +22,9 @@ Return for delayed review. Provisionally stable requires independent correct ans
 
 ## Pause and change devices
 
-Pause before closing or switching devices and wait for saving and synchronization. The plugin can restore pending work and drafts, but it does not merge simultaneous changes from two devices. Ordinary trace and summary files may sync even when plugin data does not. Syncing plugin data also transfers its unencrypted connection settings.
+Pause before closing or switching devices and wait for saving and synchronization. The plugin can restore pending work and drafts, but it does not merge simultaneous changes from two devices. Ordinary trace and summary files may sync even when plugin data does not. Learning data and ordinary settings are saved in `data.json`; the unencrypted API key and base URL stay in local `config.json`.
+
+If you choose to sync plugin data between devices, keep the local `config.json` excluded and sync `data.json`. Back up before upgrading from older versions. Existing remote copies or file history may still retain credentials from older data files; rotate a key if it was exposed.
 
 ## Seven-day feedback
 

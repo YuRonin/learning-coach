@@ -24,4 +24,4 @@ for (const name of names) {
 const publicText = await Promise.all(['main.js', 'manifest.json', 'README.md', 'LICENSE'].map(file => readFile(file, 'utf8')));
 const secretPatterns = [/sk-[A-Za-z0-9]{20,}/, /Bearer\s+[A-Za-z0-9._-]{20,}/, /AIza[0-9A-Za-z_-]{20,}/];
 for (const pattern of secretPatterns) assert.ok(!publicText.some(text => pattern.test(text)), `possible credential found: ${pattern}`);
-console.log(`Release check passed: ${manifest.version}; package contains no data.json or backup.`);
+console.log(`Release check passed: ${manifest.version}; package contains no data.json, config.json, cache, or backup.`);

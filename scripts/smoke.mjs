@@ -32,8 +32,16 @@ vm.runInNewContext(await readFile('main.js', 'utf8'), {
 });
 const Coach = module.exports.default;
 assert.equal(typeof Coach, 'function');
+const files = new Map();
+const adapter = {
+  exists: async path => files.has(path),
+  read: async path => { if (!files.has(path)) throw new Error('missing'); return files.get(path); },
+  write: async (path, value) => { files.set(path, value); },
+  list: async dir => ({ files: [...files.keys()].filter(path => path.startsWith(`${dir}/`)), folders: [] }),
+};
 const coach = new Coach();
-coach.app = { vault: { on: () => ({}) }, workspace: { on: () => ({}), getActiveFile: () => null, onLayoutReady: callback => callback() } };
+coach.manifest = { dir: 'smoke-plugin' };
+coach.app = { vault: { on: () => ({}), adapter }, workspace: { on: () => ({}), getActiveFile: () => null, onLayoutReady: callback => callback() } };
 await coach.onload();
 assert.equal(coach.views.has('learning-coach-view'), true);
 assert.equal(coach.commands.length, 5);
@@ -42,27 +50,31 @@ await Promise.all([
   coach.saveSettings({ apiKey: 'smoke-only-key' }),
   coach.saveSettings({ model: 'fixture' }),
 ]);
-assert.equal(coach.saved.settings.baseUrl, 'https://example.test/v1');
-assert.equal(coach.saved.settings.apiKey, 'smoke-only-key');
+assert.equal('baseUrl' in coach.saved.settings, false);
+assert.equal('apiKey' in coach.saved.settings, false);
+assert.deepEqual(JSON.parse(files.get('smoke-plugin/config.json')), { baseUrl: 'https://example.test/v1', apiKey: 'smoke-only-key' });
 assert.equal(coach.saved.settings.model, 'fixture');
 coach.gateway.complete = async () => JSON.stringify({ message: '开始学习。', outline: ['理解状态恢复'], question: {
   prompt: '恢复需要保存什么？', referenceQuote: '恢复需要保存真实状态与执行标识。', rubric: '指出状态和执行标识', expectedAnswer: '保存状态和执行标识。',
 }, assessment: null });
 await coach.engine.start({ path: 'sample.md', name: 'sample', text: '恢复需要保存真实状态与执行标识。', mtime: 1, selection: false }, '理解状态恢复');
 assert.equal(coach.saved.session.question.prompt, '恢复需要保存什么？');
-assert.equal(coach.saved.settings.apiKey, 'smoke-only-key');
+assert.equal('apiKey' in coach.saved.settings, false);
 await coach.engine.end();
 await coach.engine.start({ path: 'next.md', name: 'next', text: '恢复需要保存真实状态与执行标识。', mtime: 1, selection: false }, '第二次学习');
 assert.equal(coach.saved.archive.length, 1);
 assert.equal(coach.saved.archive[0].status, 'ended');
 coach.onunload();
 const restored = new Coach();
+restored.manifest = coach.manifest;
 restored.saved = coach.saved;
 restored.app = coach.app;
 await restored.onload();
 assert.equal(restored.engine.current.status, 'paused');
 assert.equal(restored.engine.current.question.prompt, '恢复需要保存什么？');
 assert.equal(restored.data.settings.model, 'fixture');
+assert.equal(restored.data.settings.apiKey, 'smoke-only-key');
+assert.equal(restored.data.settings.baseUrl, 'https://example.test/v1');
 restored.onunload();
 console.log('Bundle smoke passed: plugin registration, concurrent settings, session storage, archive, reload.');
 
@@ -86,7 +98,6 @@ console.log('Cross-platform smoke passed: mobile tab, desktop sidebar, existing 
 
 // Upgrade and recovery use synthetic fixtures only, never a real user's settings.
 const legacy = JSON.parse(await readFile('tests/fixtures/legacy-0.5.0.json', 'utf8'));
-const files = new Map();
 const upgraded = new Coach();
 upgraded.manifest = { dir: 'fixture-plugin' };
 upgraded.saved = structuredClone(legacy);
@@ -94,19 +105,23 @@ upgraded.app = { workspace: coach.app.workspace, vault: { on: () => ({}), adapte
   exists: async path => files.has(path),
   read: async path => { if (!files.has(path)) throw new Error('missing'); return files.get(path); },
   write: async (path, value) => { files.set(path, value); },
+  list: async dir => ({ files: [...files.keys()].filter(path => path.startsWith(`${dir}/`)), folders: [] }),
 } } };
 await upgraded.onload();
-assert.equal(upgraded.data.version, 4);
+assert.equal(upgraded.data.version, 5);
 assert.equal(JSON.parse(files.get('fixture-plugin/data.pre-0.9.0.json')).version, 1);
+assert.equal('apiKey' in JSON.parse(files.get('fixture-plugin/data.pre-0.9.0.json')).settings, false);
 assert.equal(upgraded.engine.current.draft, legacy.session.draft);
 assert.equal(upgraded.engine.current.choiceDraft[0], 'B');
 await upgraded.engine.resume();
 const originalQuestionId = upgraded.engine.current.question.id;
 await upgraded.changeQuestionValidity('legacy-session', originalQuestionId, '两个选项都合理');
 assert.ok(upgraded.saved.session.question.invalidated);
-assert.equal(upgraded.saved.version, 4);
-assert.equal(JSON.parse(files.get('fixture-plugin/data.backup.json')).version, 4);
-assert.equal(upgraded.saved.settings.apiKey, legacy.settings.apiKey);
+assert.equal(upgraded.saved.version, 5);
+assert.equal(JSON.parse(files.get('fixture-plugin/data.backup.json')).version, 5);
+assert.equal('apiKey' in upgraded.saved.settings, false);
+assert.equal('baseUrl' in upgraded.saved.settings, false);
+assert.equal(JSON.parse(files.get('fixture-plugin/config.json')).apiKey, legacy.settings.apiKey);
 await upgraded.changeQuestionValidity('legacy-session', originalQuestionId, null);
 assert.equal(upgraded.engine.current.question.invalidated, undefined);
 const validBackup = JSON.stringify(upgraded.saved);
@@ -117,6 +132,28 @@ await recovered.onload();
 assert.equal(recovered.engine.current.id, 'legacy-session');
 assert.equal(recovered.data.settings.apiKey, legacy.settings.apiKey);
 recovered.onunload();
+
+const format4Files = new Map([
+  ['format4-plugin/data.backup.json', JSON.stringify(legacy)],
+  ['format4-plugin/data.pre-0.9.0.json', JSON.stringify(legacy)],
+]);
+const format4 = new Coach();
+format4.manifest = { dir: 'format4-plugin' };
+format4.saved = { ...structuredClone(legacy), version: 4 };
+format4.app = { workspace: coach.app.workspace, vault: { on: () => ({}), adapter: {
+  exists: async path => format4Files.has(path),
+  read: async path => { if (!format4Files.has(path)) throw new Error('missing'); return format4Files.get(path); },
+  write: async (path, value) => { format4Files.set(path, value); },
+  list: async dir => ({ files: [...format4Files.keys()].filter(path => path.startsWith(`${dir}/`)), folders: [] }),
+} } };
+await format4.onload();
+assert.equal(JSON.parse(format4Files.get('format4-plugin/config.json')).apiKey, legacy.settings.apiKey);
+assert.equal('apiKey' in format4.saved.settings, false);
+for (const name of ['data.backup.json', 'data.pre-0.9.0.json']) {
+  assert.equal('apiKey' in JSON.parse(format4Files.get(`format4-plugin/${name}`)).settings, false);
+}
+format4.onunload();
+
 const future = new Coach(); future.manifest = upgraded.manifest; future.app = upgraded.app; future.saved = { version: 99 };
 await assert.rejects(future.onload(), /更新版本|newer plugin version/);
 assert.equal(future.saved.version, 99);
